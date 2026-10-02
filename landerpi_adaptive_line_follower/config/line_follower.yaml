@@ -1,0 +1,56 @@
+line_follower_node:
+  ros__parameters:
+    image_topic: "/ascamera/camera_publisher/rgb0/image"
+    cmd_vel_topic: "/controller/cmd_vel"
+    # v = clamp(linear_speed_max - curvature_speed_gain * |curvature_rad|,
+    # linear_speed_min, linear_speed_max). curvature_speed_gain arranca en
+    # 0.0 (velocidad fija en linear_speed_max, igual comportamiento que
+    # antes) hasta tunear en el robot con curvas reales.
+    linear_speed_max: 0.50
+    linear_speed_min: 0.20
+    curvature_speed_gain: 0.2
+
+    # Vuelto a las ganancias que andaban bien a 0.30 m/s: bajar kp/subir kd
+    # (primera prueba a 0.40) oscilo MAS, no menos — menos autoridad de
+    # correccion al salir de la curva, con kd encima amplificando ruido de
+    # offset_px. Probar primero si estas ganancias alcanzan ya a 0.40; si
+    # no corrige bien al salir de curva, subir kp por encima de 0.010 (no
+    # bajarlo) en el proximo intento.
+    angular_kp: 0.010
+    angular_ki: 0.0
+    angular_kd: 0.002
+    angular_output_max: 1.0
+    angular_integral_limit: 50.0
+
+    color_sample_patch_px: 20
+    lab_l_tolerance: 40.0
+    lab_ab_tolerance: 20.0
+    min_contour_area: 30.0
+
+    # Bajadas de 0.85-0.95/0.55-0.65/0.25-0.35 (default original) a esto:
+    # con el brazo apuntando a la pista, estas alturas de banda son las
+    # que realmente ven la cinta en el frame (confirmado en el robot).
+    near_roi_y_start: 0.65
+    near_roi_y_end: 0.75
+    mid_roi_y_start: 0.55
+    mid_roi_y_end: 0.65
+    far_roi_y_start: 0.25
+    far_roi_y_end: 0.35
+
+    # Pose fija del brazo (joints 1-4: base, hombro, codo, muneca-pitch)
+    # encontrada a mano con tools/arm_teleop.py — la camara ve bien la
+    # linea desde aca. Recalibrar con ese script si se cambia el montaje
+    # de la camara o el brazo se desarma.
+    line_follow_arm_pulses: [520, 660, 100, 200]
+
+    # Signo real del pulso de joint1 confirmado en el robot: un delta
+    # positivo NO es "derecha" con este montaje, hay que invertirlo.
+    search_arm_joint1_pulse_sign: -1.0
+
+    # Lap tracker: detecta una vuelta completa comparando la posicion de
+    # /odom_raw (dead-reckoning, no es ground truth real, pero alcanza
+    # para medir performance) contra el punto donde arranco ~/set_running.
+    # Un solo radio: "salio" si se alejo mas de este radio del arranque,
+    # "vuelta completa" si, habiendo salido, volvio a menos de ese radio.
+    odom_topic: "/odom_raw"
+    lap_loop_radius_m: 0.3
